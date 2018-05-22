@@ -18,7 +18,7 @@ import pandas as pd
 from PIL import Image
 
 
-def CreateSegNet(input_shape=(800, 600, 3), n_labels=3, kernel=3, pool_size=(2, 2), output_mode="softmax"):
+def CreateSegNet(input_shape=(600, 800, 3), n_labels=3, kernel=3, pool_size=(2, 2), output_mode="softmax"):
     # encoder
     inputs = Input(shape=input_shape)
 
