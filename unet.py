@@ -428,7 +428,7 @@ def get_model():
 
     model = Model(inputs=[inputs], outputs=[act_4])
 
-    model.compile(optimizer = Adam(lr = 1e-4), loss = 'categorical_crossentropy', metrics = ['accuracy'])
+    model.compile(optimizer = Adam(lr = 1e-4), loss = 'mse', metrics = ['accuracy'])
     return model 
 
 
