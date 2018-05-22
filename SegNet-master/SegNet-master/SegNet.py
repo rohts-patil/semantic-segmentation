@@ -1,11 +1,27 @@
 # -*- coding: utf-8 -*-
-from keras.models import Model
+from keras.models import Model, Sequential
 from keras.layers import Input
 from keras.layers.core import Dense, Dropout, Activation, Flatten, Reshape, Permute
 from keras.layers.convolutional import Convolution2D, MaxPooling2D, UpSampling2D, ZeroPadding2D
 from keras.layers.normalization import BatchNormalization
 from keras.layers.merge import Multiply, Concatenate
 from keras.utils import np_utils
+
+from keras.models import Sequential
+from keras.layers import Reshape
+from keras.layers import Merge
+from keras.layers.core import Layer, Dense, Dropout, Activation, Flatten, Reshape, Permute
+from keras.layers.normalization import BatchNormalization
+from keras.layers.convolutional import Convolution3D, MaxPooling3D, ZeroPadding3D
+from keras.layers.convolutional import Convolution2D, MaxPooling2D, UpSampling2D, ZeroPadding2D
+from keras.layers.convolutional import Convolution1D, MaxPooling1D
+from keras.layers.recurrent import LSTM
+from keras.layers.advanced_activations import LeakyReLU
+from keras.optimizers import Adam, SGD
+from keras.layers.embeddings import Embedding
+from keras.utils import np_utils
+# from keras.regularizers import ActivityRegularizer
+from keras import backend as K
 
 from Mylayers import MaxPoolingWithArgmax2D, MaxUnpooling2D
 from generator import *
@@ -132,7 +148,8 @@ def CreateSegNet(input_shape=(600, 800, 3), n_labels=3, kernel=3, pool_size=(2, 
 
     conv_26 = Convolution2D(n_labels, (1, 1), padding="valid")(conv_25)
     conv_26 = BatchNormalization()(conv_26)
-    conv_26 = Reshape((input_shape[0] * input_shape[1], n_labels), input_shape=(input_shape[0], input_shape[1], n_labels))(conv_26)
+    conv_26 = Reshape((input_shape[0] * input_shape[1], n_labels),
+                      input_shape=(input_shape[0], input_shape[1], n_labels))(conv_26)
 
     outputs = Activation(output_mode)(conv_26)
     print("Build decoder done..")
@@ -142,32 +159,84 @@ def CreateSegNet(input_shape=(600, 800, 3), n_labels=3, kernel=3, pool_size=(2, 
     return segnet
 
 
+def SegNet(input_shape=(600, 800, 3), classes=3):
+    # c.f. https://github.com/alexgkendall/SegNet-Tutorial/blob/master/Example_Models/bayesian_segnet_camvid.prototxt
+    img_input = Input(shape=input_shape)
+    x = img_input
+    # Encoder
+    x = Convolution2D(64, 3, 3, border_mode="same")(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+    x = MaxPooling2D(pool_size=(2, 2))(x)
+
+    x = Convolution2D(128, 3, 3, border_mode="same")(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+    x = MaxPooling2D(pool_size=(2, 2))(x)
+
+    x = Convolution2D(256, 3, 3, border_mode="same")(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+    x = MaxPooling2D(pool_size=(2, 2))(x)
+
+    x = Convolution2D(512, 3, 3, border_mode="same")(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+
+    # Decoder
+    x = Convolution2D(512, 3, 3, border_mode="same")(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+
+    x = UpSampling2D(size=(2, 2))(x)
+    x = Convolution2D(256, 3, 3, border_mode="same")(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+
+    x = UpSampling2D(size=(2, 2))(x)
+    x = Convolution2D(128, 3, 3, border_mode="same")(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+
+    x = UpSampling2D(size=(2, 2))(x)
+    x = Convolution2D(64, 3, 3, border_mode="same")(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+
+    x = Convolution2D(classes, 1, 1, border_mode="valid")(x)
+    x = Reshape((input_shape[0] * input_shape[1], classes))(x)
+    x = Activation("softmax")(x)
+    model = Model(img_input, x)
+    return model
+
+
 def main():
     # set the necessary list
 
     # set the necessary directories
-    trainmsk_dir  = "../../../lyft_training_data/Train/CameraSeg/"
-    trainimg_dir = '../../../lyft_training_data/Train/CameraRGB/'
+    trainmsk_dir = "../../../../../tmp/Train/CameraSeg/"
+    trainimg_dir = '../../../../../tmp/Train/CameraRGB/'
     valimg_dir = trainimg_dir
     valmsk_dir = trainmsk_dir
-    batch_size = 10
+    batch_size = 4
     loss = "categorical_crossentropy"
     optimizer = "adadelta"
-    epoch_steps = 100
+    epoch_steps = 800
     n_epochs = 10
     n_labels = 3
-    val_steps = 10
+    val_steps = 200
 
-    train_gen = data_gen_small(trainimg_dir, trainmsk_dir, batch_size, [600, 800], n_labels,800)
-    val_gen = data_gen_small_val(valimg_dir, valmsk_dir, batch_size, [600, 800], n_labels,100)
+    train_gen = data_gen_small(trainimg_dir, trainmsk_dir, batch_size, [600, 800], n_labels, 800)
+    val_gen = data_gen_small_val(valimg_dir, valmsk_dir, batch_size, [600, 800], n_labels, 200)
 
-    segnet = CreateSegNet()
-    print(segnet.summary())
-
+    # segnet = CreateSegNet()
+    # print(segnet.summary())
+    segnet = SegNet()
     segnet.compile(loss=loss, optimizer=optimizer, metrics=["accuracy"])
-    segnet.fit_generator(train_gen, steps_per_epoch=epoch_steps, epochs=n_epochs, validation_data=val_gen, validation_steps=val_steps)
+    segnet.fit_generator(train_gen, steps_per_epoch=epoch_steps, epochs=n_epochs, validation_data=val_gen,
+                         validation_steps=val_steps)
 
-    segnet.save_weights("LIP_SegNet"+str(n_epochs)+".hdf5")
+    segnet.save_weights("LIP_SegNet" + str(n_epochs) + ".hdf5")
     print("sava weight done..")
 
     json_string = segnet.to_json()
