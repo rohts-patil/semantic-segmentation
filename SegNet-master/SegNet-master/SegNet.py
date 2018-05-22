@@ -214,17 +214,19 @@ def main():
     # set the necessary list
 
     # set the necessary directories
-    trainmsk_dir = "../../../../../tmp/Train/CameraSeg/"
-    trainimg_dir = '../../../../../tmp/Train/CameraRGB/'
+    #trainmsk_dir = "../../../../../tmp/Train/CameraSeg/"
+    #trainimg_dir = '../../../../../tmp/Train/CameraRGB/'
+    trainmsk_dir = "../../../lyft_training_data/Train/CameraSeg/"
+    trainimg_dir = '../../../lyft_training_data/Train/CameraRGB/'
     valimg_dir = trainimg_dir
     valmsk_dir = trainmsk_dir
-    batch_size = 4
+    batch_size = 1
     loss = "categorical_crossentropy"
     optimizer = "adadelta"
-    epoch_steps = 800
-    n_epochs = 10
+    epoch_steps = 189
+    n_epochs = 3
     n_labels = 3
-    val_steps = 200
+    val_steps = 39
 
     train_gen = data_gen_small(trainimg_dir, trainmsk_dir, batch_size, [600, 800], n_labels, 800)
     val_gen = data_gen_small_val(valimg_dir, valmsk_dir, batch_size, [600, 800], n_labels, 200)
