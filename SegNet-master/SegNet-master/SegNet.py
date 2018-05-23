@@ -159,7 +159,7 @@ def CreateSegNet(input_shape=(600, 800, 3), n_labels=3, kernel=3, pool_size=(2, 
     return segnet
 
 
-def SegNet(input_shape=(600, 800, 3), classes=3):
+def SegNet(input_shape=(600, 800, 3), classes=2):
     # c.f. https://github.com/alexgkendall/SegNet-Tutorial/blob/master/Example_Models/bayesian_segnet_camvid.prototxt
     img_input = Input(shape=input_shape)
     x = img_input
@@ -225,7 +225,7 @@ def main():
     optimizer = "adadelta"
     epoch_steps = 189
     n_epochs = 3
-    n_labels = 3
+    n_labels = 2
     val_steps = 39
 
     train_gen = data_gen_small(trainimg_dir, trainmsk_dir, batch_size, [600, 800], n_labels, 800)
